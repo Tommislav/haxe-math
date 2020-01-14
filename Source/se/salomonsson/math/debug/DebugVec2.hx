@@ -11,6 +11,8 @@ class DebugVec2 {
 	private var _canvas:Graphics;
 	private var _scale:Float;
 
+	public var scaleStartingPos = false;
+
 	public function new (canvas:Graphics, scale:Float = 1) {
 		_canvas = canvas;
 		_scale = scale;
@@ -18,16 +20,28 @@ class DebugVec2 {
 
 	public function vec2(v:Vec2, color:Int, pos:Point = null) {
 		if (pos == null) pos = new Point();
-		var startX:Float = pos.x * _scale;
-		var startY:Float = pos.y * _scale;
-		var endX:Float = startX + v.x * _scale;
-		var endY:Float = startY + v.y * _scale;
 
+		var start = new Vec2(pos.x, pos.y);
+		var end = start.add(v);
+
+		if (_scale != 1) {
+			start = start.mul(_scale);
+			end = end.mul(_scale);
+		}
+
+
+		var tipLen = 8;
+		var arrowTip1 = end.add( v.rotate(150).normalize().mul(tipLen) );
+		var arrowTip2 = end.add( v.rotate(-150).normalize().mul(tipLen) );
 
 		_canvas.lineStyle(1.0, color);
-		_canvas.moveTo(startX, startY);
-		_canvas.lineTo(endX, endY);
-		_canvas.drawCircle(endX, endY, 2.0);
+		_canvas.moveTo(start.x, start.y);
+		_canvas.lineTo(end.x, end.y);
+
+		_canvas.lineTo(arrowTip1.x, arrowTip1.y);
+		_canvas.moveTo(end.x, end.y);
+		_canvas.lineTo(arrowTip2.x, arrowTip2.y);
+
 	}
 
 	public function point(p:Point, color:Int, pos:Point = null) {

@@ -1,0 +1,204 @@
+package se.salomonsson.math.test;
+import flash.Lib;
+import haxe.Timer;
+import flash.display.Sprite;
+class TestPerspective1 extends Sprite {
+
+	private var t:Timer;
+	private var points:Array<Float>;
+	private var lines:Array<Int>;
+	private var rot:Float = 0;
+
+	private var STAGEW:Float;
+	private var STAGEH:Float;
+
+
+	// http://www.scratchapixel.com/lessons/3d-basic-rendering/perspective-and-orthographic-projection-matrix/building-basic-perspective-projection-matrix
+
+
+	private function getTranslateMatrix(x:Float, y:Float, z:Float) {
+		var m:Matrix = new Matrix(4,4);
+		m.set([
+			1,0,0, x,
+			0,1,0, y,
+			0,0,1, z,
+			0,0,0,1
+		]);
+		return m;
+	}
+	private function getScaleMatrix(sx:Float, sy:Float, sz:Float) {
+		var m:Matrix = new Matrix(4,4);
+		m.set([
+			sx, 0, 0, 0,
+			0, sy, 0, 0,
+			0, 0, sz, 0,
+			0, 0, 0, 1
+		]);
+		return m;
+	}
+	private function getYRotationMatrix(cosAng:Float, sinAng:Float) {
+		var m:Matrix = new Matrix(4,4);
+		m.set([
+			cosAng, 0, sinAng, 0,
+			0, 1, 0, 0,
+			-sinAng, 0, cosAng, 0,
+			0, 0, 0, 1
+		]);
+		return m;
+	}
+	private function getXRotationMatrix(cosAng:Float, sinAng:Float) {
+		var m:Matrix = new Matrix(4,4);
+		m.set([
+			1, 0, 0, 0,
+			0, cosAng, -sinAng, 0,
+			0, sinAng, cosAng, 0,
+			0, 0, 0, 1
+		]);
+		return m;
+	}
+	private function getZRotationMatrix(cosAng:Float, sinAng:Float) {
+		var m:Matrix = new Matrix(4,4);
+		m.set([
+			cosAng, -sinAng, 0, 0,
+			sinAng, cosAng, 0, 0,
+			0, 0, 1, 0,
+			0, 0, 0, 1
+		]);
+		return m;
+	}
+
+
+	public function new() {
+		super();
+//		var m1:Matrix = new Matrix(4,4);
+//		m1.set([
+//			1,0,0,0,
+//			0,1,0,0,
+//			0,0,1,0,
+//			0,0,0,0
+//		]);
+//
+//		var vec:Array<Float> = [60,60,-60, 1];
+//		trace(m1.multiplyVector(vec));
+//
+//
+//		var mm1:Matrix3x3 = new Matrix3x3(
+//			1,2,1,
+//			0,1,0,
+//			0,0,1
+//		);
+//
+//		var mm2:Matrix3x3 = new Matrix3x3(
+//		1,1,0,
+//		0,1,0,
+//		0,0,3
+//		);
+//
+//		trace("\n" + mm1.mulMat(mm2));
+
+		STAGEW = Lib.current.stage.stageWidth / 2.0;
+		STAGEH = Lib.current.stage.stageHeight / 2.0;
+
+		t = new Timer(16);
+		t.run = update;
+	}
+
+	private function update() {
+		rot += 0.01;
+
+		var cosAng = Math.cos(rot);
+		var sinAng = Math.sin(rot);
+
+		var cosAng2Neg = Math.cos(-rot*4);
+		var sinAng2Neg = Math.sin(-rot *4);
+
+		var cosAng2 = Math.cos(rot*4);
+		var sinAng2 = Math.sin(rot*4);
+
+		var sinAng3 = Math.sin(rot * 10);
+
+		var perspective = new Matrix(4,4);
+		perspective.set([
+			1,0,0,0,
+			0,1,0,0,
+			0,0,1,0,
+			0,0,-(1/200),0
+		]);
+
+		var basePos = getTranslateMatrix(0,0,200);
+		var baseRotY = getYRotationMatrix(cosAng, sinAng);
+		var baseRotX = getXRotationMatrix(cosAng, sinAng);
+		var baseRot = baseRotY.multiplyMatrix(baseRotX);
+		var m = perspective.multiplyMatrix(basePos).multiplyMatrix(baseRot);
+
+
+		var s1 = getScaleMatrix(20,20,20);
+		var r1 = getYRotationMatrix(cosAng2, sinAng2).multiplyMatrix(getZRotationMatrix(Math.cos(Math.PI), Math.sin(Math.PI)));
+		var t1 = getTranslateMatrix(0,-42,0);
+		var t11 = getTranslateMatrix(0,42,0);
+		var r11 = getYRotationMatrix(cosAng2Neg, sinAng2Neg);
+
+
+
+
+
+		var wobble = (sinAng3 + 1 / 2) * 0.3 + 0.3;
+		var invWobble = 0.6 - wobble + 0.3;
+
+		var s2 = getScaleMatrix(wobble,invWobble,wobble);
+		var s3 = getScaleMatrix(invWobble,wobble,invWobble);
+		var r2 = getYRotationMatrix(-cosAng2, -sinAng2).multiplyMatrix(getXRotationMatrix(cosAng2, sinAng2));
+		var t2 = getTranslateMatrix(1.5,0,0);
+		var t3 = getTranslateMatrix(-1.5,0,0);
+
+		// pyramids
+		var m1 = m.multiplyMatrix(t1).multiplyMatrix(r1).multiplyMatrix(s1);
+		var m11 = m.multiplyMatrix(t11).multiplyMatrix(r11).multiplyMatrix(s1).multiplyMatrix(s2);
+
+		// cubes
+		var m2 = m1.multiplyMatrix(t2).multiplyMatrix(r2).multiplyMatrix(s2);
+		var m3 = m1.multiplyMatrix(t3).multiplyMatrix(r2).multiplyMatrix(s3);
+
+		var t4 = getScaleMatrix(5,5,5);
+
+		graphics.clear();
+		graphics.lineStyle(0, 0);
+
+		draw(m1, Pyramid.points, Pyramid.lines);
+		draw(m11, Pyramid.points, Pyramid.lines);
+		draw(m2, Cube.points, Cube.lines);
+		draw(m3, Cube.points, Cube.lines);
+	}
+
+	private function draw(m:Matrix, p:Array<Float>, l:Array<Int>) {
+
+		var transformedPoints:Array<Array<Float>> = new Array<Array<Float>>();
+		var orgIt = p.iterator();
+		while(orgIt.hasNext()) {
+			var x = orgIt.next();
+			var y = orgIt.next();
+			var z = orgIt.next();
+			transformedPoints.push(m.multiplyVector([x,y,z,1]));
+		}
+
+		var lineIt = l.iterator();
+		while(lineIt.hasNext()) {
+			var pStart = lineIt.next();
+			var pEnd = lineIt.next();
+			var start = getXY(transformedPoints[pStart]);
+			var end = getXY(transformedPoints[pEnd]);
+
+			graphics.moveTo(start[0], start[1]);
+			graphics.lineTo(end[0], end[1]);
+		}
+
+	}
+
+	private function getXY(vec:Array<Float>):Array<Float> {
+		var x = vec[0];
+		var y = vec[1];
+		var z = vec[2];
+		var w = vec[3];
+		return [(x/w) + STAGEW, (y/w) + STAGEH];
+	}
+}

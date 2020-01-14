@@ -5,11 +5,14 @@ class Vec2 {
 	private var _y:Float;
 	private var _lenDirty:Bool;
 	private var _len:Float;
+	private var _angleDirty:Bool;
+	private var _angle:Float;
 
 	public function new(x:Float = 0, y:Float = 0) {
 		_x = x;
 		_y = y;
 		_lenDirty = true;
+		_angleDirty = true;
 	}
 
 	public var x(get, null):Float;
@@ -33,6 +36,16 @@ class Vec2 {
 		return new Vec2(-_x, -_y);
 	}
 
+	public var angle(get, null):Float;
+	private function get_angle():Float {
+		if (!_angleDirty) {
+			return _angle;
+		}
+		_angle = Math.atan2(y, x);
+		_angleDirty = false;
+		return _angle;
+	}
+
 	public function normalize():Vec2 {
 		return new Vec2(_x / length, _y / length);
 	}
@@ -49,8 +62,14 @@ class Vec2 {
 		return new Vec2(_x * scalar, _y * scalar);
 	}
 
-	public function dev(scalar:Float) {
+	public function div(scalar:Float) {
 		return new Vec2(_x/scalar, _y/scalar);
+	}
+
+	public function rotate(byAngles:Float):Vec2 {
+		// TODO: Rotate using matrix instead of sine/cos?
+		var newAngles = angle + (byAngles * Math.PI / 180);
+		return new Vec2(Math.cos(newAngles) * length, Math.sin(newAngles) * length);
 	}
 
 	public function toString():String {
